@@ -1,12 +1,12 @@
 {
   "id": {
-    "name": "Karina Anggraini",
-    "headline": "Kreator Konten · Desainer Visual · Video Editor",
+    "name": "Ismatul Ilahiyah",
+    "headline": "Guru Bahasa Inggris",
     "contact": {
-      "email": "karina@kreatif.id",
+      "email": "iismatul4@gmail.com",
       "phone": "+62 811-2233-4455",
-      "location": "Bandung, Indonesia",
-      "website": "karinakreatif.id"
+      "location": "Pemalang, Indonesia",
+      "website": "cv-aafif.vercel.app"
     },
     "summary": "Kreator konten dan desainer visual dengan 5+ tahun pengalaman memproduksi konten digital yang estetis dan berdampak untuk brand serta channel media sosial. Menggabungkan kepekaan desain, penceritaan visual, dan penguasaan perangkat editing untuk menghasilkan karya yang konsisten, profesional, dan mudah dipahami audiens.",
     "skills": [
@@ -83,18 +83,24 @@
       }
     ],
     "languages": [
-      { "name": "Bahasa Indonesia", "level": "Penutur asli" },
-      { "name": "Inggris", "level": "Mahir (profesional)" }
+      {
+        "name": "Bahasa Indonesia",
+        "level": "Penutur asli"
+      },
+      {
+        "name": "Inggris",
+        "level": "Mahir (profesional)"
+      }
     ]
   },
   "en": {
-    "name": "Karina Anggraini",
-    "headline": "Content Creator · Visual Designer · Video Editor",
+    "name": "Ismatul Ilahiyah",
+    "headline": "Teacher",
     "contact": {
-      "email": "karina@kreatif.id",
+      "email": "iismatul4@gmail.com",
       "phone": "+62 811-2233-4455",
-      "location": "Bandung, Indonesia",
-      "website": "karinakreatif.id"
+      "location": "Pemalang, Indonesia",
+      "website": "cv-aafif.vercel.app"
     },
     "summary": "Content creator and visual designer with 5+ years producing aesthetic, high-impact digital content for brands and social channels. Combining design sensibility, visual storytelling, and strong editing skills to deliver consistent, professional work that resonates with audiences.",
     "skills": [
@@ -171,8 +177,14 @@
       }
     ],
     "languages": [
-      { "name": "Indonesian", "level": "Native" },
-      { "name": "English", "level": "Fluent (professional)" }
+      {
+        "name": "Indonesian",
+        "level": "Native"
+      },
+      {
+        "name": "English",
+        "level": "Fluent (professional)"
+      }
     ]
   },
   "theme": {
