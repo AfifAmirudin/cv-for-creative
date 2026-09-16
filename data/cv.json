@@ -188,10 +188,10 @@
     ]
   },
   "theme": {
-    "accent": "#7c5cff",
-    "accentSecondary": "#00c2a8",
-    "paper": "#faf9ff",
-    "ink": "#221b3d",
-    "texture": "grain"
+    "accent": "#e4572e",
+    "accentSecondary": "#f2a541",
+    "paper": "#fdf6ee",
+    "ink": "#2b1d16",
+    "texture": "grid"
   }
 }
