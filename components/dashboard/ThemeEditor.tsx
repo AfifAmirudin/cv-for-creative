@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type CSSProperties } from "react";
+import { type CSSProperties } from "react";
 import {
   textureLabels,
   themePresets,
@@ -81,27 +81,10 @@ function TextureThumb({
 }
 
 export default function ThemeEditor() {
-  const { theme, setTheme, applyPreset, resetTheme, saveChanges } = useDraft();
-  const timer = useRef<number | undefined>(undefined);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
-
-  const queueSave = () => {
-    window.clearTimeout(timer.current);
-    timer.current = window.setTimeout(async () => {
-      setSaving(true);
-      const ok = await saveChanges();
-      setSaving(false);
-      if (ok) {
-        setSaved(true);
-        window.setTimeout(() => setSaved(false), 2000);
-      }
-    }, 600);
-  };
+  const { theme, setTheme, applyPreset, resetTheme } = useDraft();
 
   const changeTheme = (patch: Partial<typeof theme>) => {
     setTheme(patch);
-    queueSave();
   };
 
   const choosePreset = (p: (typeof themePresets)[number]) => {
@@ -111,7 +94,6 @@ export default function ThemeEditor() {
       paper: p.paper,
       ink: p.ink,
     });
-    queueSave();
   };
 
   const chooseTexture = (texture: TextureKey) => {
@@ -146,7 +128,7 @@ export default function ThemeEditor() {
               className="relative z-10 font-display text-sm font-bold"
               style={{ color: "var(--ink)" }}
             >
-              Karina Anggraini
+              {theme.ink ? "Karina Anggraini" : "Karina Anggraini"}
             </p>
             <p
               className="relative z-10 mt-1 text-[11px] font-medium"
@@ -235,10 +217,7 @@ export default function ThemeEditor() {
         </div>
         <button
           type="button"
-          onClick={() => {
-            resetTheme();
-            queueSave();
-          }}
+          onClick={resetTheme}
           className="mt-5 rounded-full border border-[#f3d9d4] px-4 py-2 text-[13px] font-medium text-[#c0392b] transition hover:bg-[#fdecea]"
         >
           Kembalikan tema bawaan
@@ -263,11 +242,8 @@ export default function ThemeEditor() {
       </Card>
 
       <p className="text-center text-[12px] text-[#9892a8]">
-        {saving
-          ? "Menyimpan ke server…"
-          : saved
-            ? "Tersimpan di server ✓"
-            : "Perubahan tema otomatis disimpan ke server dan browser."}
+        Perubahan tema hanya tersimpan dalam draf. Klik &quot;Simpan &amp;
+        Publikasikan&quot; di atas untuk mengirim ke GitHub.
       </p>
     </div>
   );

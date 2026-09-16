@@ -18,20 +18,14 @@ const smallDanger =
   "flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[#c0392b] transition hover:bg-[#fdecea]";
 
 function useSaveState() {
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [applied, setApplied] = useState(false);
 
-  const commit = async (fn: () => Promise<boolean>) => {
-    setSaving(true);
-    const ok = await fn();
-    setSaving(false);
-    if (ok) {
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 2400);
-    }
+  const apply = () => {
+    setApplied(true);
+    window.setTimeout(() => setApplied(false), 2600);
   };
 
-  return { saving, saved, commit };
+  return { applied, apply };
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -60,9 +54,9 @@ interface ProfileForm {
 }
 
 export function ProfileEditor({ lang }: { lang: Language }) {
-  const { draft, setProfileField, setContactField, saveChanges } = useDraft();
+  const { draft, setProfileField, setContactField } = useDraft();
   const p = draft[lang];
-  const { saving, saved, commit } = useSaveState();
+  const { applied, apply } = useSaveState();
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState<ProfileForm>({
     name: p.name,
@@ -92,7 +86,7 @@ export function ProfileEditor({ lang }: { lang: Language }) {
     setContactField(lang, "phone", form.phone);
     setContactField(lang, "location", form.location);
     setContactField(lang, "website", form.website);
-    void commit(() => saveChanges());
+    apply();
     setEditing(false);
   };
 
@@ -170,9 +164,8 @@ export function ProfileEditor({ lang }: { lang: Language }) {
         onEdit={begin}
         onSave={save}
         onCancel={() => setEditing(false)}
-        saving={saving}
       />
-      <SaveResult shown={saved} />
+      <SaveResult shown={applied} />
     </Card>
   );
 }
@@ -182,8 +175,8 @@ export function ProfileEditor({ lang }: { lang: Language }) {
 /* ------------------------------------------------------------------ */
 
 export function SummaryEditor({ lang }: { lang: Language }) {
-  const { draft, setSummary, saveChanges } = useDraft();
-  const { saving, saved, commit } = useSaveState();
+  const { draft, setSummary } = useDraft();
+  const { applied, apply } = useSaveState();
   const [editing, setEditing] = useState(false);
   const [text, setText] = useState(draft[lang].summary);
 
@@ -194,7 +187,7 @@ export function SummaryEditor({ lang }: { lang: Language }) {
 
   const save = () => {
     setSummary(lang, text);
-    void commit(() => saveChanges());
+    apply();
     setEditing(false);
   };
 
@@ -219,9 +212,8 @@ export function SummaryEditor({ lang }: { lang: Language }) {
         onEdit={begin}
         onSave={save}
         onCancel={() => setEditing(false)}
-        saving={saving}
       />
-      <SaveResult shown={saved} />
+      <SaveResult shown={applied} />
     </Card>
   );
 }
@@ -231,9 +223,9 @@ export function SummaryEditor({ lang }: { lang: Language }) {
 /* ------------------------------------------------------------------ */
 
 export function SkillsEditor({ lang }: { lang: Language }) {
-  const { draft, setList, saveChanges } = useDraft();
+  const { draft, setList } = useDraft();
   const skills = draft[lang].skills;
-  const { saving, saved, commit } = useSaveState();
+  const { applied, apply } = useSaveState();
   const [editing, setEditing] = useState(false);
   const [list, setLocal] = useState<string[]>(skills);
   const [adding, setAdding] = useState("");
@@ -249,7 +241,7 @@ export function SkillsEditor({ lang }: { lang: Language }) {
       .map((s) => s.trim())
       .filter((s) => s.length > 0);
     setList(lang, "skills", clean);
-    void commit(() => saveChanges());
+    apply();
     setEditing(false);
   };
 
@@ -326,9 +318,8 @@ export function SkillsEditor({ lang }: { lang: Language }) {
         onEdit={begin}
         onSave={save}
         onCancel={() => setEditing(false)}
-        saving={saving}
       />
-      <SaveResult shown={saved} />
+      <SaveResult shown={applied} />
     </Card>
   );
 }
@@ -427,10 +418,10 @@ function ExperienceForm({
 }
 
 export function ExperienceEditor({ lang }: { lang: Language }) {
-  const { draft, addListItem, setListItem, removeListItem, moveItem, saveChanges } =
+  const { draft, addListItem, setListItem, removeListItem, moveItem } =
     useDraft();
   const items = draft[lang].experiences;
-  const { saving, saved, commit } = useSaveState();
+  const { applied, apply } = useSaveState();
   const [editIndex, setEditIndex] = useState<number | null>(null);
   const [working, setWorking] = useState<ExpItem | null>(null);
 
@@ -462,19 +453,17 @@ export function ExperienceEditor({ lang }: { lang: Language }) {
     } else {
       setListItem(lang, "experiences", editIndex, working);
     }
-    void commit(() => saveChanges());
+    apply();
     cancel();
   };
 
   const removeItem = (i: number) => {
     if (!window.confirm("Hapus pengalaman ini?")) return;
     removeListItem(lang, "experiences", i);
-    void saveChanges();
   };
 
   const moveItemBy = (i: number, offset: -1 | 1) => {
     moveItem(lang, "experiences", i, offset);
-    void saveChanges();
   };
 
   return (
@@ -503,7 +492,6 @@ export function ExperienceEditor({ lang }: { lang: Language }) {
                 onEdit={() => {}}
                 onSave={saveCurrent}
                 onCancel={cancel}
-                saving={saving}
               />
             </ItemCard>
           ) : (
@@ -547,14 +535,13 @@ export function ExperienceEditor({ lang }: { lang: Language }) {
               onEdit={() => {}}
               onSave={saveCurrent}
               onCancel={cancel}
-              saving={saving}
             />
           </ItemCard>
         ) : null}
 
         <AddButton label="Tambah Pengalaman" onClick={beginAdd} />
       </div>
-      <SaveResult shown={saved} />
+      <SaveResult shown={applied} />
     </Card>
   );
 }
@@ -617,10 +604,10 @@ function ListFields({
 }
 
 export function EducationEditor({ lang }: { lang: Language }) {
-  const { draft, addListItem, setListItem, removeListItem, moveItem, saveChanges } =
+  const { draft, addListItem, setListItem, removeListItem, moveItem } =
     useDraft();
   const items = draft[lang].education;
-  const { saving, saved, commit } = useSaveState();
+  const { applied, apply } = useSaveState();
   const { editIndex, working, setWorking, beginEdit, beginAdd, cancel } =
     useListEdit<CVData["education"][number]>();
 
@@ -631,19 +618,17 @@ export function EducationEditor({ lang }: { lang: Language }) {
     } else {
       setListItem(lang, "education", editIndex, working);
     }
-    void commit(() => saveChanges());
+    apply();
     cancel();
   };
 
   const removeItem = (i: number) => {
     if (!window.confirm("Hapus pendidikan ini?")) return;
     removeListItem(lang, "education", i);
-    void saveChanges();
   };
 
   const moveItemBy = (i: number, offset: -1 | 1) => {
     moveItem(lang, "education", i, offset);
-    void saveChanges();
   };
 
   const fields = [
@@ -669,7 +654,6 @@ export function EducationEditor({ lang }: { lang: Language }) {
                 onEdit={() => {}}
                 onSave={saveCurrent}
                 onCancel={cancel}
-                saving={saving}
               />
             </ItemCard>
           ) : (
@@ -715,7 +699,6 @@ export function EducationEditor({ lang }: { lang: Language }) {
               onEdit={() => {}}
               onSave={saveCurrent}
               onCancel={cancel}
-              saving={saving}
             />
           </ItemCard>
         ) : null}
@@ -732,16 +715,16 @@ export function EducationEditor({ lang }: { lang: Language }) {
           }
         />
       </div>
-      <SaveResult shown={saved} />
+      <SaveResult shown={applied} />
     </Card>
   );
 }
 
 export function CertificatesEditor({ lang }: { lang: Language }) {
-  const { draft, addListItem, setListItem, removeListItem, moveItem, saveChanges } =
+  const { draft, addListItem, setListItem, removeListItem, moveItem } =
     useDraft();
   const items = draft[lang].certificates;
-  const { saving, saved, commit } = useSaveState();
+  const { applied, apply } = useSaveState();
   const { editIndex, working, setWorking, beginEdit, beginAdd, cancel } =
     useListEdit<CVData["certificates"][number]>();
 
@@ -752,19 +735,17 @@ export function CertificatesEditor({ lang }: { lang: Language }) {
     } else {
       setListItem(lang, "certificates", editIndex, working);
     }
-    void commit(() => saveChanges());
+    apply();
     cancel();
   };
 
   const removeItem = (i: number) => {
     if (!window.confirm("Hapus sertifikasi ini?")) return;
     removeListItem(lang, "certificates", i);
-    void saveChanges();
   };
 
   const moveItemBy = (i: number, offset: -1 | 1) => {
     moveItem(lang, "certificates", i, offset);
-    void saveChanges();
   };
 
   const fields = [
@@ -790,7 +771,6 @@ export function CertificatesEditor({ lang }: { lang: Language }) {
                 onEdit={() => {}}
                 onSave={saveCurrent}
                 onCancel={cancel}
-                saving={saving}
               />
             </ItemCard>
           ) : (
@@ -837,7 +817,6 @@ export function CertificatesEditor({ lang }: { lang: Language }) {
               onEdit={() => {}}
               onSave={saveCurrent}
               onCancel={cancel}
-              saving={saving}
             />
           </ItemCard>
         ) : null}
@@ -847,16 +826,16 @@ export function CertificatesEditor({ lang }: { lang: Language }) {
           onClick={() => beginAdd({ title: "", issuer: "", year: "" })}
         />
       </div>
-      <SaveResult shown={saved} />
+      <SaveResult shown={applied} />
     </Card>
   );
 }
 
 export function LanguagesEditor({ lang }: { lang: Language }) {
-  const { draft, addListItem, setListItem, removeListItem, moveItem, saveChanges } =
+  const { draft, addListItem, setListItem, removeListItem, moveItem } =
     useDraft();
   const items = draft[lang].languages;
-  const { saving, saved, commit } = useSaveState();
+  const { applied, apply } = useSaveState();
   const { editIndex, working, setWorking, beginEdit, beginAdd, cancel } =
     useListEdit<CVData["languages"][number]>();
 
@@ -867,19 +846,17 @@ export function LanguagesEditor({ lang }: { lang: Language }) {
     } else {
       setListItem(lang, "languages", editIndex, working);
     }
-    void commit(() => saveChanges());
+    apply();
     cancel();
   };
 
   const removeItem = (i: number) => {
     if (!window.confirm("Hapus bahasa ini?")) return;
     removeListItem(lang, "languages", i);
-    void saveChanges();
   };
 
   const moveItemBy = (i: number, offset: -1 | 1) => {
     moveItem(lang, "languages", i, offset);
-    void saveChanges();
   };
 
   const fields = [
@@ -903,7 +880,6 @@ export function LanguagesEditor({ lang }: { lang: Language }) {
                 onEdit={() => {}}
                 onSave={saveCurrent}
                 onCancel={cancel}
-                saving={saving}
               />
             </ItemCard>
           ) : (
@@ -946,7 +922,6 @@ export function LanguagesEditor({ lang }: { lang: Language }) {
               onEdit={() => {}}
               onSave={saveCurrent}
               onCancel={cancel}
-              saving={saving}
             />
           </ItemCard>
         ) : null}
@@ -956,7 +931,7 @@ export function LanguagesEditor({ lang }: { lang: Language }) {
           onClick={() => beginAdd({ name: "", level: "" })}
         />
       </div>
-      <SaveResult shown={saved} />
+      <SaveResult shown={applied} />
     </Card>
   );
 }

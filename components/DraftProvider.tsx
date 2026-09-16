@@ -5,16 +5,19 @@ import {
   useCallback,
   useContext,
   useEffect,
-  useSyncExternalStore,
+  useMemo,
+  useRef,
+  useState,
   type ReactNode,
 } from "react";
 import {
-  cvData,
-  defaultTheme,
+  defaultContent,
+  type ContentFile,
   type CVData,
   type Language,
   type ThemeSettings,
-} from "@/lib/translations";
+} from "@/lib/cv";
+import type { DeploymentStatus } from "@/lib/vercel";
 
 export type CVDraft = Record<Language, CVData>;
 
@@ -27,88 +30,38 @@ export type ListSection =
 
 type DraftItem = string | Record<string, unknown>;
 
-interface StoredData {
-  id: CVData;
-  en: CVData;
-  theme: ThemeSettings;
-}
+export type LoadStatus =
+  | { kind: "loading" }
+  | { kind: "ready"; source: "github" | "bundle" }
+  | { kind: "error"; message: string };
 
-const STORAGE_KEY = "cv-kreatif-v1";
+export type PublishState =
+  | { kind: "idle" }
+  | { kind: "saving" }
+  | {
+      kind: "saved";
+      commitSha: string;
+      deployment: DeploymentStatus | null;
+    }
+  | { kind: "conflict"; message: string }
+  | { kind: "failed"; message: string };
 
-let cache: StoredData | null = null;
-const listeners = new Set<() => void>();
-
-function defaults(): StoredData {
-  return {
-    id: { ...cvData.id },
-    en: { ...cvData.en },
-    theme: { ...defaultTheme },
-  };
-}
-
-function loadStored(): StoredData | null {
-  if (typeof window === "undefined") {
-    return null;
-  }
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (!parsed || !parsed.id || !parsed.en) return null;
-    return {
-      id: { ...defaults().id, ...parsed.id },
-      en: { ...defaults().en, ...parsed.en },
-      theme: { ...defaults().theme, ...(parsed.theme ?? {}) },
-    };
-  } catch {
-    return null;
-  }
-}
-
-function getSnapshot(): StoredData {
-  if (!cache) {
-    cache = loadStored() ?? defaults();
-  }
-  return cache;
-}
-
-function getServerSnapshot(): StoredData {
-  return defaults();
-}
-
-function subscribe(cb: () => void): () => void {
-  listeners.add(cb);
-  return () => {
-    listeners.delete(cb);
-  };
-}
-
-function commit(next: StoredData) {
-  cache = next;
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-  } catch {
-    // storage may be unavailable; in-memory value still applies
-  }
-  listeners.forEach((cb) => cb());
-}
-
-async function saveToServer() {
-  try {
-    const res = await fetch("/api/cv", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(getSnapshot()),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
+export interface PublishResult {
+  ok: boolean;
+  sha?: string;
+  commitSha?: string;
+  deployment?: DeploymentStatus | null;
+  error?: string;
 }
 
 export interface DraftContextValue {
   draft: CVDraft;
   theme: ThemeSettings;
+  sha: string | null;
+  dirty: boolean;
+  loadStatus: LoadStatus;
+  publishState: PublishState;
+  lastSavedAt: string | null;
   setProfileField: (
     lang: Language,
     field: "name" | "headline",
@@ -137,59 +90,271 @@ export interface DraftContextValue {
   setList: (lang: Language, section: ListSection, items: DraftItem[]) => void;
   setTheme: (patch: Partial<ThemeSettings>) => void;
   applyPreset: (preset: Omit<ThemeSettings, "texture">) => void;
-  resetAll: () => void;
   resetTheme: () => void;
-  saveChanges: () => Promise<boolean>;
+  publish: () => Promise<PublishResult>;
+  checkDeployment: () => Promise<void>;
+  refresh: () => Promise<void>;
+  discardAndReload: () => Promise<void>;
 }
 
 const DraftContext = createContext<DraftContextValue | null>(null);
 
-export function DraftProvider({ children }: { children: ReactNode }) {
-  const stored = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
+function cloneDefaults(): ContentFile {
+  return structuredClone(defaultContent);
+}
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/cv");
-        const server = await res.json();
-        if (!cancelled && server?.id && server?.en) {
-          commit({
-            id: { ...defaults().id, ...server.id },
-            en: { ...defaults().en, ...server.en },
-            theme: { ...defaults().theme, ...(server.theme ?? {}) },
-          });
-        }
-      } catch {
-        // keep local cache on failure
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
+function cloneContent(content: ContentFile): ContentFile {
+  return structuredClone(content);
+}
+
+function listOf(section: ListSection, data: CVData): DraftItem[] {
+  return data[section] as DraftItem[];
+}
+
+export function DraftProvider({ children }: { children: ReactNode }) {
+  const [content, initContent] = useState<ContentFile | null>(null);
+  const [sha, setSha] = useState<string | null>(null);
+  const [loadStatus, setLoadStatus] = useState<LoadStatus>({
+    kind: "loading",
+  });
+  const [publishState, setPublishState] = useState<PublishState>({
+    kind: "idle",
+  });
+  const [lastConfirmed, setLastConfirmed] = useState<ContentFile | null>(null);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+
+  const contentRef = useRef<ContentFile | null>(null);
+  const publishingRef = useRef(false);
+  const publishNonceRef = useRef<string | null>(null);
+
+  const applyContent = useCallback((next: ContentFile | null) => {
+    contentRef.current = next;
+    initContent(next);
   }, []);
 
-  const updateLanguage = useCallback(
-    (lang: Language, fn: (data: CVData) => CVData) => {
-      const current = getSnapshot();
-      commit({
-        ...current,
-        [lang]: fn(current[lang]),
+  const dirty = useMemo(() => {
+    if (!content || !lastConfirmed) return false;
+    return JSON.stringify(content) !== JSON.stringify(lastConfirmed);
+  }, [content, lastConfirmed]);
+
+
+  const refresh = useCallback(async () => {
+    setLoadStatus({ kind: "loading" });
+    try {
+      const res = await fetch("/api/cv", { cache: "no-store" });
+      if (!res.ok) {
+        let message = `Gagal memuat konten dari server (HTTP ${res.status}).`;
+        try {
+          const data = (await res.json()) as { error?: string };
+          if (data.error) message = data.error;
+        } catch {
+        }
+        setLoadStatus({ kind: "error", message });
+        return;
+      }
+      const data = (await res.json()) as {
+        ok: boolean;
+        content?: ContentFile;
+        sha?: string | null;
+        source?: "github" | "bundle";
+        warning?: string;
+      };
+      if (!data.content) {
+        setLoadStatus({
+          kind: "error",
+          message: "Server tidak mengembalikan konten CV.",
+        });
+        return;
+      }
+      applyContent(cloneContent(data.content));
+      setLastConfirmed(cloneContent(data.content));
+      setSha(data.sha ?? null);
+      setLastSavedAt(new Date().toISOString());
+      setLoadStatus({
+        kind: "ready",
+        source: data.source ?? "github",
       });
+      setPublishState({ kind: "idle" });
+    } catch {
+      setLoadStatus({
+        kind: "error",
+        message:
+          "Tidak dapat menghubungi server. Muat ulang halaman untuk mencoba lagi.",
+      });
+    }
+  }, [applyContent]);
+
+  useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+
+  const mutate = useCallback(
+    (fn: (current: ContentFile) => ContentFile) => {
+      const current = contentRef.current;
+      if (!current) return;
+      const next = fn(cloneContent(current));
+      (contentRef.current as ContentFile) = next;
+      initContent(next);
     },
     []
   );
 
-  const setTheme = useCallback((patch: Partial<ThemeSettings>) => {
-    const current = getSnapshot();
-    commit({ ...current, theme: { ...current.theme, ...patch } });
-  }, []);
+  const updateLanguage = useCallback(
+    (lang: Language, fn: (data: CVData) => CVData) => {
+      mutate((current) => ({ ...current, [lang]: fn(current[lang]) }));
+    },
+    [mutate]
+  );
 
-  const saveChanges = useCallback(() => saveToServer(), []);
+
+  const publish = useCallback(async (): Promise<PublishResult> => {
+    const current = contentRef.current;
+    if (!current || publishingRef.current) {
+      return { ok: false, error: "Konten belum dimuat." };
+    }
+    publishingRef.current = true;
+    setPublishState({ kind: "saving" });
+    try {
+      const res = await fetch("/api/cv", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: current, sha }),
+        cache: "no-store",
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        sha?: string;
+        commitSha?: string;
+        deployment?: DeploymentStatus | null;
+        conflict?: boolean;
+        error?: string;
+      };
+
+      if (res.status === 409 || data.conflict) {
+        setPublishState({
+          kind: "conflict",
+          message: data.error ?? "Konten di GitHub sudah berubah.",
+        });
+        return {
+          ok: false,
+          error: data.error ?? "Versi konten di GitHub sudah berubah.",
+        };
+      }
+      if (!res.ok || !data.ok) {
+        setPublishState({
+          kind: "failed",
+          message: data.error ?? `Gagal menyimpan (HTTP ${res.status}).`,
+        });
+        return {
+          ok: false,
+          error: data.error ?? `Gagal menyimpan (HTTP ${res.status}).`,
+        };
+      }
+
+      setLastConfirmed(cloneContent(current));
+      setSha(data.sha ?? sha);
+      setLastSavedAt(new Date().toISOString());
+      setPublishState({
+        kind: "saved",
+        commitSha: data.commitSha ?? data.sha ?? "",
+        deployment: data.deployment ?? null,
+      });
+      return { ok: true, sha: data.sha, commitSha: data.commitSha, deployment: data.deployment };
+    } catch {
+      setPublishState({
+        kind: "failed",
+        message: "Gagal menghubungi server. Perubahan belum disimpan.",
+      });
+      return {
+        ok: false,
+        error: "Gagal menghubungi server. Perubahan belum disimpan.",
+      };
+    } finally {
+      publishingRef.current = false;
+    }
+  }, [sha]);
+
+
+  const checkDeployment = useCallback(async () => {
+    if (
+      publishState.kind !== "saved" ||
+      !publishState.commitSha ||
+      publishState.deployment?.state === "READY" ||
+      publishState.deployment?.state === "ERROR" ||
+      publishState.deployment?.state === "CANCELED"
+    ) {
+      return;
+    }
+    try {
+      const res = await fetch(
+        `/api/cv/deployment?sha=${encodeURIComponent(publishState.commitSha)}`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) return;
+      const data = (await res.json()) as {
+        ok?: boolean;
+        deployment?: DeploymentStatus;
+      };
+      if (data.deployment) {
+        setPublishState((prev) =>
+          prev.kind === "saved"
+            ? { ...prev, deployment: data.deployment ?? null }
+            : prev
+        );
+      }
+    } catch {
+    }
+  }, [publishState]);
+
+  const startPolling = useCallback(() => {
+    const key = `poll-${Date.now()}`;
+    publishNonceRef.current = key;
+    let attempts = 0;
+    const timer = window.setInterval(async () => {
+      attempts += 1;
+      if (publishNonceRef.current !== key || attempts > 15) {
+        window.clearInterval(timer);
+        return;
+      }
+      await checkDeployment();
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [checkDeployment]);
+
+  useEffect(() => {
+    if (
+      publishState.kind === "saved" &&
+      publishState.deployment?.configured &&
+      publishState.deployment.state !== "READY" &&
+      publishState.deployment.state !== "ERROR" &&
+      publishState.deployment.state !== "CANCELED"
+    ) {
+      const cleanup = startPolling();
+      return cleanup;
+    }
+  }, [publishState, startPolling]);
+
+
+  useEffect(() => {
+    if (!dirty) return;
+    const handler = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [dirty]);
+
 
   const value: DraftContextValue = {
-    draft: { id: stored.id, en: stored.en },
-    theme: stored.theme,
+    draft: { id: content?.id ?? cloneDefaults().id, en: content?.en ?? cloneDefaults().en },
+    theme: content?.theme ?? cloneDefaults().theme,
+    sha,
+    dirty,
+    loadStatus,
+    publishState,
+    lastSavedAt,
 
     setProfileField: (lang, field, text) =>
       updateLanguage(lang, (d) => ({ ...d, [field]: text })),
@@ -205,14 +370,14 @@ export function DraftProvider({ children }: { children: ReactNode }) {
 
     addListItem: (lang, section, item) =>
       updateLanguage(lang, (d) => {
-        const list = [...(d[section] as DraftItem[])];
+        const list = [...listOf(section, d)];
         list.push(item);
         return { ...d, [section]: list };
       }),
 
     setListItem: (lang, section, index, item) =>
       updateLanguage(lang, (d) => {
-        const list = [...(d[section] as DraftItem[])];
+        const list = [...listOf(section, d)];
         const current = list[index];
         list[index] =
           typeof current === "string"
@@ -223,15 +388,13 @@ export function DraftProvider({ children }: { children: ReactNode }) {
 
     removeListItem: (lang, section, index) =>
       updateLanguage(lang, (d) => {
-        const list = (d[section] as DraftItem[]).filter(
-          (_, i) => i !== index
-        );
+        const list = listOf(section, d).filter((_, i) => i !== index);
         return { ...d, [section]: list };
       }),
 
     moveItem: (lang, section, index, offset) =>
       updateLanguage(lang, (d) => {
-        const list = [...(d[section] as DraftItem[])];
+        const list = [...listOf(section, d)];
         const target = index + offset;
         if (target < 0 || target >= list.length) return d;
         const [moved] = list.splice(index, 1);
@@ -242,29 +405,31 @@ export function DraftProvider({ children }: { children: ReactNode }) {
     setList: (lang, section, items) =>
       updateLanguage(lang, (d) => ({ ...d, [section]: items })),
 
-    setTheme,
-
-    applyPreset: (preset) => {
-      const current = getSnapshot();
-      commit({ ...current, theme: { ...current.theme, ...preset } });
+    setTheme: (patch) => {
+      mutate((current) => ({
+        ...current,
+        theme: { ...current.theme, ...patch },
+      }));
     },
 
-    resetAll: () => {
-      try {
-        localStorage.removeItem(STORAGE_KEY);
-      } catch {
-        // ignore
-      }
-      commit(defaults());
-      void saveToServer();
+    applyPreset: (preset) => {
+      mutate((current) => ({
+        ...current,
+        theme: { ...current.theme, ...preset },
+      }));
     },
 
     resetTheme: () => {
-      setTheme(defaultTheme);
-      void saveToServer();
+      mutate((current) => ({
+        ...current,
+        theme: cloneDefaults().theme,
+      }));
     },
 
-    saveChanges,
+    publish,
+    checkDeployment,
+    refresh,
+    discardAndReload: refresh,
   };
 
   return (

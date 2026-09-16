@@ -1,0 +1,185 @@
+{
+  "id": {
+    "name": "Karina Anggraini",
+    "headline": "Kreator Konten · Desainer Visual · Video Editor",
+    "contact": {
+      "email": "karina@kreatif.id",
+      "phone": "+62 811-2233-4455",
+      "location": "Bandung, Indonesia",
+      "website": "karinakreatif.id"
+    },
+    "summary": "Kreator konten dan desainer visual dengan 5+ tahun pengalaman memproduksi konten digital yang estetis dan berdampak untuk brand serta channel media sosial. Menggabungkan kepekaan desain, penceritaan visual, dan penguasaan perangkat editing untuk menghasilkan karya yang konsisten, profesional, dan mudah dipahami audiens.",
+    "skills": [
+      "Adobe Photoshop",
+      "Illustrator",
+      "Premiere Pro",
+      "After Effects",
+      "Figma",
+      "Canva",
+      "DaVinci Resolve",
+      "CapCut",
+      "Motion Graphics",
+      "Copywriting",
+      "Storytelling",
+      "Strategi Media Sosial"
+    ],
+    "experiences": [
+      {
+        "role": "Kreator Konten Senior",
+        "company": "Studio Kreatif Nusantara",
+        "location": "Bandung, Indonesia",
+        "period": "2022 – Sekarang",
+        "points": [
+          "Memproduksi 40+ konten (reels, desain feed, video pendek) per bulan untuk portofolio 8 brand, meningkatkan rata-rata engagement hingga 3,2×.",
+          "Memimpin perancangan visual dan tone komunikasi, menjaga identitas brand agar konsisten di semua kanal.",
+          "Berkolaborasi dengan tim klien untuk menyusun kalender konten dan strategi kampanye bulanan."
+        ]
+      },
+      {
+        "role": "Graphic Designer & Video Editor",
+        "company": "Agensi Visual Kita",
+        "location": "Jakarta, Indonesia",
+        "period": "2019 – 2022",
+        "points": [
+          "Merancang materi visual kampanye (poster, iklan digital, motion) untuk 20+ klien lintas industri.",
+          "Menyunting 120+ video promosi dengan alur cerita yang jelas, meningkatkan durasi menonton rata-rata 45%.",
+          "Membangun library template aset yang mempercepat produksi hingga 30%."
+        ]
+      },
+      {
+        "role": "Freelance Desainer & Editor",
+        "company": "Mandiri",
+        "location": "Bandung, Indonesia",
+        "period": "2017 – 2019",
+        "points": [
+          "Mengerjakan proyek desain logo, packaging, dan editing video untuk UMKM serta personal brand.",
+          "Mengelola komunikasi klien dari brief awal hingga final deliverable sesuai tenggat."
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "S.Ds., Desain Komunikasi Visual",
+        "institution": "Institut Seni Indonesia",
+        "period": "2013 – 2017",
+        "note": "IPK 3.80 / 4.00"
+      }
+    ],
+    "certificates": [
+      {
+        "title": "Meta Certified Digital Marketing Associate",
+        "issuer": "Meta",
+        "year": "2024"
+      },
+      {
+        "title": "Google UX Design Professional",
+        "issuer": "Google",
+        "year": "2023"
+      },
+      {
+        "title": "Adobe Certified Professional – Premiere Pro",
+        "issuer": "Adobe",
+        "year": "2022"
+      }
+    ],
+    "languages": [
+      { "name": "Bahasa Indonesia", "level": "Penutur asli" },
+      { "name": "Inggris", "level": "Mahir (profesional)" }
+    ]
+  },
+  "en": {
+    "name": "Karina Anggraini",
+    "headline": "Content Creator · Visual Designer · Video Editor",
+    "contact": {
+      "email": "karina@kreatif.id",
+      "phone": "+62 811-2233-4455",
+      "location": "Bandung, Indonesia",
+      "website": "karinakreatif.id"
+    },
+    "summary": "Content creator and visual designer with 5+ years producing aesthetic, high-impact digital content for brands and social channels. Combining design sensibility, visual storytelling, and strong editing skills to deliver consistent, professional work that resonates with audiences.",
+    "skills": [
+      "Adobe Photoshop",
+      "Illustrator",
+      "Premiere Pro",
+      "After Effects",
+      "Figma",
+      "Canva",
+      "DaVinci Resolve",
+      "CapCut",
+      "Motion Graphics",
+      "Copywriting",
+      "Storytelling",
+      "Social Media Strategy"
+    ],
+    "experiences": [
+      {
+        "role": "Senior Content Creator",
+        "company": "Nusantara Creative Studio",
+        "location": "Bandung, Indonesia",
+        "period": "2022 – Present",
+        "points": [
+          "Produced 40+ assets (reels, feed design, short videos) monthly across 8 brand portfolios, raising average engagement by 3.2×.",
+          "Led visual direction and tone of voice, keeping brand identity consistent across all channels.",
+          "Collaborated with client teams on monthly content calendars and campaign strategy."
+        ]
+      },
+      {
+        "role": "Graphic Designer & Video Editor",
+        "company": "Our Visual Agency",
+        "location": "Jakarta, Indonesia",
+        "period": "2019 – 2022",
+        "points": [
+          "Designed campaign visuals (posters, digital ads, motion graphics) for 20+ clients across industries.",
+          "Edited 120+ promo videos with clear narrative structure, increasing average watch time by 45%.",
+          "Built a reusable asset template library that sped up production by 30%."
+        ]
+      },
+      {
+        "role": "Freelance Designer & Editor",
+        "company": "Self-employed",
+        "location": "Bandung, Indonesia",
+        "period": "2017 – 2019",
+        "points": [
+          "Delivered logo, packaging, and video editing projects for SMBs and personal brands.",
+          "Managed client communication from brief to final deliverables, always on deadline."
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "B.Arts, Visual Communication Design",
+        "institution": "Indonesian Institute of the Arts",
+        "period": "2013 – 2017",
+        "note": "GPA 3.80 / 4.00"
+      }
+    ],
+    "certificates": [
+      {
+        "title": "Meta Certified Digital Marketing Associate",
+        "issuer": "Meta",
+        "year": "2024"
+      },
+      {
+        "title": "Google UX Design Professional",
+        "issuer": "Google",
+        "year": "2023"
+      },
+      {
+        "title": "Adobe Certified Professional – Premiere Pro",
+        "issuer": "Adobe",
+        "year": "2022"
+      }
+    ],
+    "languages": [
+      { "name": "Indonesian", "level": "Native" },
+      { "name": "English", "level": "Fluent (professional)" }
+    ]
+  },
+  "theme": {
+    "accent": "#7c5cff",
+    "accentSecondary": "#00c2a8",
+    "paper": "#faf9ff",
+    "ink": "#221b3d",
+    "texture": "grain"
+  }
+}

@@ -297,20 +297,22 @@ export function ActionButtons({
 export function SaveResult({ shown }: { shown: boolean }) {
   if (!shown) return null;
   return (
-    <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-emerald-600">
+    <span className="mt-3 inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-700">
       <svg
         aria-hidden="true"
         viewBox="0 0 24 24"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.5"
+        strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
         className="h-3.5 w-3.5"
       >
-        <path d="M20 6 9 17l-5-5" />
+        <path d="M12 16v-4" />
+        <path d="M12 8h.01" />
+        <path d="M10.3 3.7 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z" />
       </svg>
-      Tersimpan di server ✓
+      Diterapkan ke draf — belum dipublikasikan
     </span>
   );
 }
